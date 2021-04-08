@@ -4,6 +4,8 @@ Adam Bartonicek
 (last updated: 2021-04-08)
 
 -   [Determinant by row-operations](#determinant-by-row-operations)
+-   [Pseudo-random number generation (linear congruential
+    generator)](#pseudo-random-number-generation-linear-congruential-generator)
 
 ## Determinant by row-operations
 
@@ -55,3 +57,36 @@ det(mat)
 ```
 
     ## [1] -95
+
+## Pseudo-random number generation (linear congruential generator)
+
+This is a particular type of pseudo-random number generator that uses
+the following function to generate “random” samples:
+
+*s*<sub>*t*</sub> = *a* ⋅ *s*<sub>*t* − 1</sub> + *b* *m**o**d* *M*
+
+where *a*, *b*, and *M* are integers.
+
+(from Ben Lambert’s [Student Guide to Bayesian Statistics problem
+sets](https://study.sagepub.com/lambert))
+
+``` r
+s0 <- 1
+a <- 1597
+b <- 51749
+M <- 244944
+
+nsamples <- 300
+
+s <- numeric(nsamples)
+s[1] <- s0
+
+for (i in 2:nsamples) {
+  s[i] = (a * s[i - 1] + b) %% M
+}
+
+plot(1:nsamples, s, type = 'l',
+     xlab = 'Sample', ylab = 'Value')
+```
+
+![](handy_algorithms_files/figure-gfm/unnamed-chunk-2-1.png)<!-- -->

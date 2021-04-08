@@ -6,6 +6,8 @@ output:
   github_document:
     toc: true
     toc_depth: 2
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
@@ -54,5 +56,36 @@ mat <- matrix(sample(1:9), ncol = 3)
 
 det_row(mat)
 det(mat)
+
+```
+
+## Pseudo-random number generation (linear congruential generator)
+
+This is a particular type of pseudo-random number generator that uses the following function to generate "random" samples:
+
+$s_{t} = a \cdot s_{t-1} + b\; mod \; M$
+
+where $a$, $b$, and $M$ are integers.
+
+(from Ben Lambert's [Student Guide to Bayesian Statistics problem sets](https://study.sagepub.com/lambert))
+
+```{r}
+
+s0 <- 1
+a <- 1597
+b <- 51749
+M <- 244944
+
+nsamples <- 300
+
+s <- numeric(nsamples)
+s[1] <- s0
+
+for (i in 2:nsamples) {
+  s[i] = (a * s[i - 1] + b) %% M
+}
+
+plot(1:nsamples, s, type = 'l',
+     xlab = 'Sample', ylab = 'Value')
 
 ```
