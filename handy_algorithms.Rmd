@@ -2,7 +2,10 @@
 title: "Handy Algorithms"
 author: "Adam Bartonicek"
 date: "(last updated: `r as.Date(Sys.time())`)"
-output: github_document
+output: 
+  github_document:
+    toc: true
+    toc_depth: 2
 ---
 
 ```{r setup, include=FALSE}

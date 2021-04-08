@@ -3,6 +3,8 @@ Handy Algorithms
 Adam Bartonicek
 (last updated: 2021-04-08)
 
+-   [Determinant by row-operations](#determinant-by-row-operations)
+
 ## Determinant by row-operations
 
 Find the determinant of a square matrix using row-operations. Based on
