@@ -63,7 +63,7 @@ det(mat)
 
 This is a particular type of pseudo-random number generator that uses the following function to generate "random" samples:
 
-$s_{t} = a \cdot s_{t-1} + b\; mod \; M$
+$s_{t} = a \cdot s_{t-1} + b\; \text{mod} \; M$
 
 where $a$, $b$, and $M$ are integers.
 
