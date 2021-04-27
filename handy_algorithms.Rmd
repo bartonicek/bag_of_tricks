@@ -12,7 +12,21 @@ editor_options:
 
 ```{r setup, include=FALSE}
 
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, message=FALSE, warning=FALSE, 
+                      fig.align='center')
+knitr::opts_knit$set(global.par = TRUE)
+
+```
+
+```{r, echo=FALSE}
+
+col_bg <- 'snow'
+col_highlight <- 'steelblue'
+col_fade <- 'grey60'
+
+par(bg = col_bg, las = 1, bty = 'L',
+    mar = c(4.5, 4.5, 4, 2) + 0.1, cex.axis = 0.8)
+
 ```
 
 ## Euler's method
@@ -24,7 +38,7 @@ We start from the initial value, and then iteratively increment $x$ by a stepsiz
 ```{r}
 
 # Derivative of function y
-dy <- function(x, y) y
+dy <- function(y) y
 
 # Inputs: derivative function, initial x, initial y, stepsize, length
 euler <- function(dy = NULL, x0 = 0, y0 = 1, stepsize = 0.1, len = 100) {
@@ -39,7 +53,7 @@ euler <- function(dy = NULL, x0 = 0, y0 = 1, stepsize = 0.1, len = 100) {
   #          2) increment y by stepsize times derivative
   for (i in 2:len) {
     x[i] <- x[i - 1] + stepsize
-    y[i] <- y[i - 1] + stepsize * dy(x[i - 1], y[i - 1])
+    y[i] <- y[i - 1] + stepsize * dy(y[i - 1])
   }
 
   # Return list of x's and y's
@@ -50,10 +64,25 @@ euler <- function(dy = NULL, x0 = 0, y0 = 1, stepsize = 0.1, len = 100) {
 b <- euler(dy, stepsize = 0.05)
 x <- seq(0, 5, length.out = 100)
 
-plot(x, exp(x), type = 'l', xlab = 'x', ylab = 'y')
-lines(b$x, b$y, col = 'red')
-legend('topleft', col = c('black', 'red'), lwd = c(1, 1), 
-       legend = c(expression(y == italic(e)^x), "Euler's method approximation"))
+# Plot code not shown (see .Rmd)
+```
+
+```{r, echo=FALSE}
+
+plot(x, exp(x), type = 'l', xlab = '', ylab = '', 
+     col = col_fade, axes = FALSE, lwd = 1.5)
+lines(b$x, b$y, col = col_highlight, lwd = 1.5)
+text(expression(y == e^x), 
+     x = b$x[80] - 0.05, y = b$y[80] + 10, adj = 1, 
+     col = col_fade)
+text("Euler's method", 
+     x = b$x[80] + 0.05, y = b$y[80] - 10, adj = 0, 
+     col = col_highlight)
+axis(1, tick = FALSE, line = -0.5)
+axis(2, tick = FALSE, line = -0.5, las = 1)
+mtext('x', 1, line = 2, family = 'serif')
+mtext('y', 2, line = 2, family = 'serif')
+box(bty = 'L', col = col_fade)
 
 ```
 
@@ -123,22 +152,41 @@ cdf <- function(x) {
   integrate(pdf, 0, x)[[1]]
 }
 
-# Make inverse CDF by approximating a vector of cumulative densities
-# numerically (via linear approximation)
+# Make inverse CDF by numeric approximation (linear)
 cumdens <- sapply(seq(0.01, 5, 0.01), cdf)
 icdf <- approxfun(cumdens, seq(0.01, 5, 0.01))
 
-# Draw random samples & transform them via ICDF (and also randomly flip sign
-# so that we get both positive & negative values)
+# Draw random samples & transform via ICDF (+ flip sign)
 samples <- runif(10000, 0, 0.5)
 x <- icdf(samples) * ifelse(runif(1000, 0, 2) > 1, 1, -1)
 
-par(mfrow = c(1, 2))
+# Plot code not shown (see .Rmd)
+```
 
+```{r, echo=FALSE}
+
+par(mfrow = c(1, 2))
 plot(seq(-3, 3, 0.1), pdf(seq(-3, 3, 0.1)), type = 'l',
-     xlab = 'x', ylab = 'Density', main = 'Probability density function')
-hist(x, main = 'Random samples')
-box()
+     xlab = '', ylab = '', main = '',  axes = FALSE,
+     col = col_highlight, lwd = 1.5)
+axis(1, tick = FALSE, line = -0.5)
+axis(2, tick = FALSE, line = -0.5)
+mtext('x', 1, line = 2, family = 'serif')
+mtext('Density', 2, line = 2, family = 'serif', las = 0)
+mtext('Probability density', 3, line = 2, family = 'serif', 
+      font = 2, cex = 1.5)
+box(col = col_fade)
+
+hist(x, main = '', xlab = '', ylab = '', col = col_highlight,
+     border = col_bg, axes = FALSE)
+axis(1, tick = FALSE, line = -0.5)
+axis(2, tick = FALSE, line = -0.5)
+mtext('x', 1, line = 2, family = 'serif')
+mtext('Count', 2, line = 2.5, family = 'serif', las = 0)
+mtext('Random samples', 3, line = 2, family = 'serif', 
+      font = 2, cex = 1.5)
+box(col = col_fade)
+par(mfrow = c(1, 1))
 
 ```
 
@@ -168,8 +216,21 @@ for (i in 2:nsamples) {
   s[i] = (a * s[i - 1] + b) %% M
 }
 
+# Plot code not shown (see .Rmd)
+```
+
+```{r}
+
+y_breaks <- seq(0, 2.5, by = 0.5) * 1e5
+
 plot(1:nsamples, s, type = 'l',
-     xlab = 'Sample', ylab = 'Value')
+     xlab = '', ylab = '', 
+     col = col_highlight, lwd = 1.5,
+     axes = FALSE)
+axis(1, tick = FALSE, line = -0.5)
+mtext('Iteration', 1, line = 2, family = 'serif')
+mtext('Value', 2, line = 0.75, family = 'serif', las = 0)
+box(col = col_fade)
 
 ```
 

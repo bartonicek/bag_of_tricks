@@ -1,7 +1,7 @@
 Handy Algorithms
 ================
 Adam Bartonicek
-(last updated: 2021-04-08)
+(last updated: 2021-04-27)
 
 -   [Euler’s method](#eulers-method)
 -   [Determinant by row-operations](#determinant-by-row-operations)
@@ -23,7 +23,7 @@ stepsize:
 
 ``` r
 # Derivative of function y
-dy <- function(x, y) y
+dy <- function(y) y
 
 # Inputs: derivative function, initial x, initial y, stepsize, length
 euler <- function(dy = NULL, x0 = 0, y0 = 1, stepsize = 0.1, len = 100) {
@@ -38,7 +38,7 @@ euler <- function(dy = NULL, x0 = 0, y0 = 1, stepsize = 0.1, len = 100) {
   #          2) increment y by stepsize times derivative
   for (i in 2:len) {
     x[i] <- x[i - 1] + stepsize
-    y[i] <- y[i - 1] + stepsize * dy(x[i - 1], y[i - 1])
+    y[i] <- y[i - 1] + stepsize * dy(y[i - 1])
   }
 
   # Return list of x's and y's
@@ -49,13 +49,10 @@ euler <- function(dy = NULL, x0 = 0, y0 = 1, stepsize = 0.1, len = 100) {
 b <- euler(dy, stepsize = 0.05)
 x <- seq(0, 5, length.out = 100)
 
-plot(x, exp(x), type = 'l', xlab = 'x', ylab = 'y')
-lines(b$x, b$y, col = 'red')
-legend('topleft', col = c('black', 'red'), lwd = c(1, 1), 
-       legend = c(expression(y == italic(e)^x), "Euler's method approximation"))
+# Plot code not shown (see .Rmd)
 ```
 
-![](handy_algorithms_files/figure-gfm/unnamed-chunk-1-1.png)<!-- -->
+<img src="handy_algorithms_files/figure-gfm/unnamed-chunk-3-1.png" style="display: block; margin: auto;" />
 
 ## Determinant by row-operations
 
@@ -141,25 +138,18 @@ cdf <- function(x) {
   integrate(pdf, 0, x)[[1]]
 }
 
-# Make inverse CDF by approximating a vector of cumulative densities
-# numerically (via linear approximation)
+# Make inverse CDF by numeric approximation (linear)
 cumdens <- sapply(seq(0.01, 5, 0.01), cdf)
 icdf <- approxfun(cumdens, seq(0.01, 5, 0.01))
 
-# Draw random samples & transform them via ICDF (and also randomly flip sign
-# so that we get both positive & negative values)
+# Draw random samples & transform via ICDF (+ flip sign)
 samples <- runif(10000, 0, 0.5)
 x <- icdf(samples) * ifelse(runif(1000, 0, 2) > 1, 1, -1)
 
-par(mfrow = c(1, 2))
-
-plot(seq(-3, 3, 0.1), pdf(seq(-3, 3, 0.1)), type = 'l',
-     xlab = 'x', ylab = 'Density', main = 'Probability density function')
-hist(x, main = 'Random samples')
-box()
+# Plot code not shown (see .Rmd)
 ```
 
-![](handy_algorithms_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
+<img src="handy_algorithms_files/figure-gfm/unnamed-chunk-6-1.png" style="display: block; margin: auto;" />
 
 ## Pseudo-random number generation (linear congruential generator)
 
@@ -188,8 +178,20 @@ for (i in 2:nsamples) {
   s[i] = (a * s[i - 1] + b) %% M
 }
 
-plot(1:nsamples, s, type = 'l',
-     xlab = 'Sample', ylab = 'Value')
+# Plot code not shown (see .Rmd)
 ```
 
-![](handy_algorithms_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
+``` r
+y_breaks <- seq(0, 2.5, by = 0.5) * 1e5
+
+plot(1:nsamples, s, type = 'l',
+     xlab = '', ylab = '', 
+     col = col_highlight, lwd = 1.5,
+     axes = FALSE)
+axis(1, tick = FALSE, line = -0.5)
+mtext('Iteration', 1, line = 2, family = 'serif')
+mtext('Value', 2, line = 0.75, family = 'serif', las = 0)
+box(col = col_fade)
+```
+
+<img src="handy_algorithms_files/figure-gfm/unnamed-chunk-8-1.png" style="display: block; margin: auto;" />
