@@ -1,14 +1,63 @@
 Handy Algorithms
 ================
 Adam Bartonicek
-(last updated: 2021-04-27)
+(last updated: 2021-04-28)
 
+-   [Cumulative mean and cumulative variance via updating (Welford’s
+    Algorithm)](#cumulative-mean-and-cumulative-variance-via-updating-welfords-algorithm)
 -   [Euler’s method](#eulers-method)
--   [Determinant by row-operations](#determinant-by-row-operations)
+-   [Determinant via row-operations](#determinant-via-row-operations)
 -   [Inverse transform random
     sampling](#inverse-transform-random-sampling)
 -   [Pseudo-random number generation (linear congruential
     generator)](#pseudo-random-number-generation-linear-congruential-generator)
+
+## Cumulative mean and cumulative variance via updating (Welford’s Algorithm)
+
+Find cumulative variance for a sample with 1 additional new observation.
+This is an efficient solution when we know the mean and variance of a
+vector *x* and a new value *x*<sub>*n**e**w*</sub>, but don’t want to
+recompute mean and variance across the whole vector (for example, when
+the vector is big or when we need to repeat the process many times).
+
+The formula for the new mean is a simple weighted average of the old
+mean and the new observation. The formula for the new variance is more
+complicated and is not numerically stable (the difference between old
+and new variance is extremely small for large enough *n*), so it is
+easier to compute cumulative sum of squares and then divide by *n* − 1
+to get the variance.
+
+(from [Wikipedia article on Algorithms for calculating
+variance](https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance))
+
+``` r
+x <- rnorm(100)
+n <- seq_along(x)
+
+cmu <- numeric(100)
+cmu[1] <- x[1]
+csumsq <- numeric(100)
+
+# Compute cumulative variance (+ mean) via updating
+for (i in 2:100) {
+  cmu[i] <- (n[i - 1] * cmu[i - 1] + x[i]) / n[i] # Cumulative mean
+  csumsq[i] <- csumsq[i - 1] +                    # Cumulative sum of squares
+    (x[i] - cmu[i - 1]) * (x[i] - cmu[i])
+}
+
+csigma1 <- csumsq / (n - 1)
+csigma1[1] <- 0
+
+# Compute cumulative variance the effortful way
+csigma2 <- numeric(100)
+for (i in 2:100) {
+  csigma2[i] <- var(x[1:i])
+}
+
+all.equal(csigma1, csigma2)
+```
+
+    ## [1] TRUE
 
 ## Euler’s method
 
@@ -52,22 +101,22 @@ x <- seq(0, 5, length.out = 100)
 # Plot code not shown (see .Rmd)
 ```
 
-<img src="handy_algorithms_files/figure-gfm/unnamed-chunk-3-1.png" style="display: block; margin: auto;" />
+<img src="handy_algorithms_files/figure-gfm/unnamed-chunk-4-1.png" style="display: block; margin: auto;" />
 
-## Determinant by row-operations
+## Determinant via row-operations
 
 Find the determinant of a square matrix using row-operations.
-Alternative to finding the determinant via minors and co-factors. Based
-on the following properties of determinants:
+Alternative to finding the determinant through minors and co-factors.
+Based on the following properties of determinants:
 
 1.  Multiplying row *i* by *c* mutliplies the determinant by *c*
 2.  Subtracting *c* times row *i* from row *j* does not affect the
     determinant
 
-We start from the first row and then do row operations to get 1’s on the
-diagonal and 0’s under the diagonal, keeping score of the factors by
-which we multiply/divide the rows, and then multiply out the factors
-together:
+We start from the first row of the matrix and then do row operations to
+get 1’s on the diagonal and 0’s under the diagonal, keeping score of the
+factors by which we multiply/divide the rows, and then multiply out the
+factors together:
 
 ``` r
 det_row <- function(mat) {
@@ -76,23 +125,16 @@ det_row <- function(mat) {
   fact <- numeric(nr - 1)
   
   for (i in seq_len(nr - 1)) {
-    
     # Normalize current row (1 in first column) & save the multiplication factor
     fact[i] <- mat[i, i]
     mat[i, ] <- mat[i, ] / mat[i, i]
     
-    # Subtract multiples of the current row from all succeeding rows
-    # to get a column of zeros below
+    # Subtract multiples of current row from rows below (get all 0's)
     for (j in (i + 1):nr)
-    
       mat[j, ] <- mat[j, ] - mat[j, i] * mat[i, ] 
-  
   }
-  
-  # Take the product of the multiplication factors 
-  # & the last value in the matrix (unnormalized)
+  # Take the product of mult. factors & the last (unscaled) value in the matrix 
   prod(fact) * mat[nr, nr]
-
 }
 
 # Example
@@ -100,16 +142,10 @@ det_row <- function(mat) {
 set.seed(12345)
 mat <- matrix(sample(1:9), ncol = 3)
 
-det_row(mat)
+c(det_row(mat), det(mat))
 ```
 
-    ## [1] -95
-
-``` r
-det(mat)
-```
-
-    ## [1] -95
+    ## [1] -95 -95
 
 ## Inverse transform random sampling
 
@@ -124,8 +160,8 @@ otherwise we can also make a CDF via R’s numerical integration.
 sets](https://study.sagepub.com/lambert))
 
 We take a CDF, approximate the inverse CDF (ICDF) via R’s `approxfun()`,
-and then use this to back-transform \`runif()\`\` samples (cumulative
-probabilities) into samples from the PDF:
+and then use this to back-transform `runif()` samples (cumulative
+probabilities) into samples from our PDF:
 
 ``` r
 # Probability density function (normal)
@@ -149,7 +185,7 @@ x <- icdf(samples) * ifelse(runif(1000, 0, 2) > 1, 1, -1)
 # Plot code not shown (see .Rmd)
 ```
 
-<img src="handy_algorithms_files/figure-gfm/unnamed-chunk-6-1.png" style="display: block; margin: auto;" />
+<img src="handy_algorithms_files/figure-gfm/unnamed-chunk-7-1.png" style="display: block; margin: auto;" />
 
 ## Pseudo-random number generation (linear congruential generator)
 
@@ -178,20 +214,9 @@ for (i in 2:nsamples) {
   s[i] = (a * s[i - 1] + b) %% M
 }
 
+s <- s / max(s)
+
 # Plot code not shown (see .Rmd)
 ```
 
-``` r
-y_breaks <- seq(0, 2.5, by = 0.5) * 1e5
-
-plot(1:nsamples, s, type = 'l',
-     xlab = '', ylab = '', 
-     col = col_highlight, lwd = 1.5,
-     axes = FALSE)
-axis(1, tick = FALSE, line = -0.5)
-mtext('Iteration', 1, line = 2, family = 'serif')
-mtext('Value', 2, line = 0.75, family = 'serif', las = 0)
-box(col = col_fade)
-```
-
-<img src="handy_algorithms_files/figure-gfm/unnamed-chunk-8-1.png" style="display: block; margin: auto;" />
+<img src="handy_algorithms_files/figure-gfm/unnamed-chunk-9-1.png" style="display: block; margin: auto;" />
