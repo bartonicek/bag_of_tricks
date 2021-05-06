@@ -46,12 +46,12 @@ par(bg = col_bg, las = 1, bty = 'L',
 
 Find cumulative variance for a sample with 1 additional new observation. This is an efficient solution when we know the mean and variance of a vector $x$ and a new value $x_{new}$, but don't want to recompute mean and variance across the whole vector (for example, when the vector is big or when we need to repeat the process many times).
 
-The formula for the new mean is a simple weighted average of the old mean and the new observation. The formula for the new variance is more complicated and is not numerically stable (the difference between old and new variance is extremely small for large enough $n$), so it is easier to compute cumulative sum of squares and then divide by $n - 1$ to get the variance.
+The formula for the new mean is a simple weighted average of the old mean and the new observation. The formula for the new variance is more complicated and not very numerically stable (the difference between old and new variance will be very small after enough iterations). As such, it is easier to compute the (numerically stable) cumulative sum of squares and then divide by $n - 1$ to get the variance.
 
 (from [Wikipedia article on Algorithms for calculating variance](https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance))
 
 ```{r}
-
+set.seed(123456)
 x <- rnorm(100)
 n <- seq_along(x)
 
@@ -188,6 +188,24 @@ c(det_row(mat), det(mat))
 
 ```
 
+## Faster `sample()`
+
+Generate a vector of random numbers (possibly integers) using `runif()`. Faster than using `sample()`. Useful for e.g. simulation or generating cross-validation indices.
+
+(from the great [STATS782 Statistical Computing](https://study.sagepub.com/lambert) course at UoA)
+
+```{r}
+set.seed(123456)
+# Same result as sample(1:9, 100, replace = TRUE)
+ceiling(runif(20, 0, 9))
+
+n <- 1e7
+t1 <- system.time(ceiling(runif(n, 0, 9))) # Almost 2 x faster
+t2 <- system.time(sample(1:9, n, replace = TRUE))
+
+rbind(t1, t2)
+```
+
 ## Inverse transform random sampling
 
 Generate random samples for an arbitrary distribution by using inverse cumulative density function (or numerical approximation of it). This is useful when we have a probability density function (PDF) but no function to draw samples from it (e.g. like `rnorm()`, `rpois()`, etc...). If we have cumulative density function (CDF), we can use it directly, otherwise we can also make a CDF via R's numerical integration.
@@ -248,9 +266,9 @@ par(mfrow = c(1, 1))
 
 ## Piecewise linear regression
 
-Fit a linear regression model (in base R) with pre-specified break-points (knots) in the trend. A quick and dirty way to fit fairly non-linear data without having to use splines, polynomials, etc...
+Fit a "piecewise" linear regression model (in base R) with pre-specified break-points (knots). A quick and dirty way to fit fairly non-linear data without having to use splines, polynomials, etc...
 
-(from the amazing [STATS782 Statistical Computing](https://study.sagepub.com/lambert) course at UoA)
+(from the great [STATS782 Statistical Computing](https://study.sagepub.com/lambert) course at UoA)
 
 
 ```{r}

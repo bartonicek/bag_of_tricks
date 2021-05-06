@@ -9,6 +9,7 @@ Adam Bartonicek
     -   [Euler’s method](#eulers-method)
     -   [Determinant via
         row-operations](#determinant-via-row-operations)
+    -   [Faster `sample()`](#faster-sample)
     -   [Inverse transform random
         sampling](#inverse-transform-random-sampling)
     -   [Piecewise linear regression](#piecewise-linear-regression)
@@ -41,15 +42,16 @@ the vector is big or when we need to repeat the process many times).
 
 The formula for the new mean is a simple weighted average of the old
 mean and the new observation. The formula for the new variance is more
-complicated and is not numerically stable (the difference between old
-and new variance is extremely small for large enough *n*), so it is
-easier to compute cumulative sum of squares and then divide by *n* − 1
-to get the variance.
+complicated and not very numerically stable (the difference between old
+and new variance will be very small after enough iterations). As such,
+it is easier to compute the (numerically stable) cumulative sum of
+squares and then divide by *n* − 1 to get the variance.
 
 (from [Wikipedia article on Algorithms for calculating
 variance](https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance))
 
 ``` r
+set.seed(123456)
 x <- rnorm(100)
 n <- seq_along(x)
 
@@ -168,6 +170,35 @@ c(det_row(mat), det(mat))
 
     ## [1] -95 -95
 
+## Faster `sample()`
+
+Generate a vector of random numbers (possibly integers) using `runif()`.
+Faster than using `sample()`. Useful for e.g. simulation or generating
+cross-validation indices.
+
+(from the great [STATS782 Statistical
+Computing](https://study.sagepub.com/lambert) course at UoA)
+
+``` r
+set.seed(123456)
+# Same result as sample(1:9, 100, replace = TRUE)
+ceiling(runif(20, 0, 9))
+```
+
+    ##  [1] 8 7 4 4 4 2 5 1 9 2 8 6 9 8 9 9 8 2 4 7
+
+``` r
+n <- 1e7
+t1 <- system.time(ceiling(runif(n, 0, 9))) # Almost 2 x faster
+t2 <- system.time(sample(1:9, n, replace = TRUE))
+
+rbind(t1, t2)
+```
+
+    ##    user.self sys.self elapsed user.child sys.child
+    ## t1     0.312    0.012   0.325          0         0
+    ## t2     0.563    0.016   0.580          0         0
+
 ## Inverse transform random sampling
 
 Generate random samples for an arbitrary distribution by using inverse
@@ -206,15 +237,15 @@ x <- icdf(samples) * ifelse(runif(1000, 0, 2) > 1, 1, -1)
 # Plot code not shown (see .Rmd)
 ```
 
-<img src="README_files/figure-gfm/unnamed-chunk-8-1.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-9-1.png" style="display: block; margin: auto;" />
 
 ## Piecewise linear regression
 
-Fit a linear regression model (in base R) with pre-specified
-break-points (knots) in the trend. A quick and dirty way to fit fairly
-non-linear data without having to use splines, polynomials, etc…
+Fit a “piecewise” linear regression model (in base R) with pre-specified
+break-points (knots). A quick and dirty way to fit fairly non-linear
+data without having to use splines, polynomials, etc…
 
-(from the amazing [STATS782 Statistical
+(from the great [STATS782 Statistical
 Computing](https://study.sagepub.com/lambert) course at UoA)
 
 ``` r
@@ -239,7 +270,7 @@ newy <- predict(fit1, data.frame(newX), type = 'response',
                 interval = 'prediction')
 ```
 
-<img src="README_files/figure-gfm/unnamed-chunk-10-1.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-11-1.png" style="display: block; margin: auto;" />
 
 ## Pseudo-random number generation (linear congruential generator)
 
@@ -273,4 +304,4 @@ s <- s / max(s)
 # Plot code not shown (see .Rmd)
 ```
 
-<img src="README_files/figure-gfm/unnamed-chunk-12-1.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-13-1.png" style="display: block; margin: auto;" />
