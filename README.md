@@ -1,9 +1,10 @@
 Handy Algorithms
 ================
 Adam Bartonicek
-(last updated: 2021-05-06)
+(last updated: 2021-05-07)
 
--   [Handy Algorithms](#handy-algorithms)
+-   [Bag of Tricks](#bag-of-tricks)
+    -   [Bayes Rule](#bayes-rule)
     -   [Cumulative mean and cumulative variance via updating (Welford’s
         Algorithm)](#cumulative-mean-and-cumulative-variance-via-updating-welfords-algorithm)
     -   [Euler’s method](#eulers-method)
@@ -16,7 +17,7 @@ Adam Bartonicek
     -   [Pseudo-random number generation (linear congruential
         generator)](#pseudo-random-number-generation-linear-congruential-generator)
 
-# Handy Algorithms
+# Bag of Tricks
 
 This is a kind of personal handbook of short algorithms, methods and
 tricks that I found useful at some time or another during my journey
@@ -31,6 +32,75 @@ given problem. Instead, I tried to strike balance between legibility and
 length.
 
 Most of the code will be in R, unless I decide otherwise.
+
+## Bayes Rule
+
+Given a set of possible actions, find the optimal action by weighing a
+loss function by the posterior probability/predictive distribution.
+
+**Example:** let’s say I observe a tennis player play against 5 oponents
+and win in for of the five matches: *y* = 1, 1, 1, 0, 1. Another person
+at the tennis match offers me the following bet:
+
+> The tennis player is going to play 10 more matches. For $30, I can bet
+> how many tennis matches the player wins. If he wins at least the X
+> matches I bet on, then the person will pay me $10 for every match won.
+> If the tennis player wins fewer than X matches, I get nothing and he
+> keeps my $30.
+
+To find out how many matches I should bet on, I can do the following
+Bayesian analysis:
+
+``` r
+y <- c(1, 1, 1, 1, 0, 1)
+theta <- seq(0, 1, 0.01)
+
+# Non-informative Beta(1, 1) prior + observed y and (n-y)
+a <- 1 + sum(y)
+b <- 1 + length(y) - sum(y)
+
+# Calculate and normalize posterior
+post <- dbeta(theta, a, b)
+post <- post / sum(post)
+
+# Draw random 1,000,000 samples:
+n <- 1e6
+theta_s <- rbeta(n, a, b) # ...of theta
+y_s <- rbinom(n, 10, theta_s) # ...of wins out of 10 matches
+```
+
+<img src="README_files/figure-gfm/unnamed-chunk-3-1.png" width="672" style="display: block; margin: auto;" />
+
+``` r
+# Probs. of matches won
+ps <- table(y_s) / sum(table(y_s))
+
+# Cumulative probs. of winning at least X matches
+cps <- cumsum(rev(ps)) # Have to reverse to count X or fewer
+
+# Expected outcomes for each decision
+data.frame(prob_of_x = as.numeric(ps), 
+           prob_at_least_x = as.numeric(cps),
+           payoff = cps * (10:0) * 10 - 30)
+```
+
+    ##    prob_of_x prob_at_least_x    payoff
+    ## 10  0.000565        0.154386 -14.56140
+    ## 9   0.003138        0.360170   2.41530
+    ## 8   0.009819        0.558768  14.70144
+    ## 7   0.023178        0.721861  20.53027
+    ## 6   0.045256        0.840613  20.43678
+    ## 5   0.077431        0.918044  15.90220
+    ## 4   0.118752        0.963300   8.53200
+    ## 3   0.163093        0.986478  -0.40566
+    ## 2   0.198598        0.996297 -10.07406
+    ## 1   0.205784        0.999435 -20.00565
+    ## 0   0.154386        1.000000 -30.00000
+
+Clearly, the best choice is to bet that the tennis player is going to
+win 7 matches, as it has the highest expected outcome of $20.50 (or, if
+I feel a bit more conservative, I can bet 6 matches which have almost
+the same expected outcome with $20.40).
 
 ## Cumulative mean and cumulative variance via updating (Welford’s Algorithm)
 
@@ -80,7 +150,7 @@ all.equal(csigma1, csigma2)
 
     ## [1] TRUE
 
-<img src="README_files/figure-gfm/unnamed-chunk-3-1.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-6-1.png" style="display: block; margin: auto;" />
 
 ## Euler’s method
 
@@ -124,7 +194,7 @@ x <- seq(0, 5, length.out = 100)
 # Plot code not shown (see .Rmd)
 ```
 
-<img src="README_files/figure-gfm/unnamed-chunk-5-1.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-8-1.png" style="display: block; margin: auto;" />
 
 ## Determinant via row-operations
 
@@ -196,8 +266,8 @@ rbind(t1, t2)
 ```
 
     ##    user.self sys.self elapsed user.child sys.child
-    ## t1     0.312    0.012   0.325          0         0
-    ## t2     0.563    0.016   0.580          0         0
+    ## t1     0.294    0.013   0.305          0         0
+    ## t2     0.550    0.019   0.569          0         0
 
 ## Inverse transform random sampling
 
@@ -237,7 +307,7 @@ x <- icdf(samples) * ifelse(runif(1000, 0, 2) > 1, 1, -1)
 # Plot code not shown (see .Rmd)
 ```
 
-<img src="README_files/figure-gfm/unnamed-chunk-9-1.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-12-1.png" style="display: block; margin: auto;" />
 
 ## Piecewise linear regression
 
@@ -270,7 +340,7 @@ newy <- predict(fit1, data.frame(newX), type = 'response',
                 interval = 'prediction')
 ```
 
-<img src="README_files/figure-gfm/unnamed-chunk-11-1.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-14-1.png" style="display: block; margin: auto;" />
 
 ## Pseudo-random number generation (linear congruential generator)
 
@@ -304,4 +374,4 @@ s <- s / max(s)
 # Plot code not shown (see .Rmd)
 ```
 
-<img src="README_files/figure-gfm/unnamed-chunk-13-1.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-16-1.png" style="display: block; margin: auto;" />

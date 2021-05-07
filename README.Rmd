@@ -10,7 +10,7 @@ editor_options:
   chunk_output_type: console
 ---
 
-# Handy Algorithms
+# Bag of Tricks
 
 This is a kind of personal handbook of short algorithms, methods and tricks that I found useful at some time or another during my journey into statistical computing. I'm writing this to help me remember:
 
@@ -41,6 +41,82 @@ par(bg = col_bg, las = 1, bty = 'L',
     mar = c(4.5, 4.5, 4, 2) + 0.1, cex.axis = 0.8)
 
 ```
+
+## Bayes Rule
+
+Given a set of possible actions, find the optimal action by weighing a loss function by the posterior probability/predictive distribution.
+
+**Example:** let's say I observe a tennis player play against 5 oponents and win in for of the five matches: $y = 1, 1, 1, 0, 1$. Another person at the tennis match offers me the following bet:
+
+> The tennis player is going to play 10 more matches. For $30, I can bet how many tennis matches the player wins. If he wins at least the X matches I bet on, then the person will pay me $10 for every match won. If the tennis player wins fewer than X matches, I get nothing and he keeps my $30. 
+
+To find out how many matches I should bet on, I can do the following Bayesian analysis:
+
+```{r}
+
+y <- c(1, 1, 1, 1, 0, 1)
+theta <- seq(0, 1, 0.01)
+
+# Non-informative Beta(1, 1) prior + observed y and (n-y)
+a <- 1 + sum(y)
+b <- 1 + length(y) - sum(y)
+
+# Calculate and normalize posterior
+post <- dbeta(theta, a, b)
+post <- post / sum(post)
+
+# Draw random 1,000,000 samples:
+n <- 1e6
+theta_s <- rbeta(n, a, b) # ...of theta
+y_s <- rbinom(n, 10, theta_s) # ...of wins out of 10 matches
+
+```
+
+```{r, fig.retina=2, echo=FALSE}
+
+par(mar = c(5, 4, 4, 2), mfrow = c(1, 2),
+    bg = col_bg)
+
+plot(theta, post, type = 'n', axes = FALSE, 
+     xlab = '', ylab = '')
+polygon(c(theta, rev(theta)),
+        c(post, rep(0, length(theta))),
+        col = col_highlight, border = NA)
+axis(1, tick = FALSE, line = -0.5)
+mtext(expression(theta), 1, line = 2, family = 'serif')
+mtext('(probability of winning a match)', 1, line = 3, family = 'serif')
+mtext('Probability density', 2, line = 1, family = 'serif', las = 0)
+mtext("Player's ability as probability\nof winning a match", 3, 
+      line = 1, adj = 0, family = 'serif', cex = 1.5)
+box(bty = 'L', col = col_fade)
+
+hist(y_s, main = '', xlab = '', ylab = '', col = col_highlight,
+     border = col_bg, axes = FALSE, breaks = 0:10)
+axis(1, at = 0:10, tick = FALSE, line = -0.5)
+axis(2, tick = FALSE, line = -0.5)
+mtext('Matches won', 1, line = 2, family = 'serif')
+mtext('Count', 2, line = 2.5, family = 'serif', las = 0)
+mtext("Random samples given\nplayer's ability", 3, line = 1, 
+      family = 'serif', adj = 0, cex = 1.5)
+box(bty = 'L', col = col_fade)
+
+```
+
+```{r}
+
+# Probs. of matches won
+ps <- table(y_s) / sum(table(y_s))
+
+# Cumulative probs. of winning at least X matches
+cps <- cumsum(rev(ps)) # Have to reverse to count X or fewer
+
+# Expected outcomes for each decision
+data.frame(prob_of_x = as.numeric(ps), 
+           prob_at_least_x = as.numeric(cps),
+           payoff = cps * (10:0) * 10 - 30)
+```
+
+Clearly, the best choice is to bet that the tennis player is going to win 7 matches, as it has the highest expected outcome of \$20.50 (or, if I feel a bit more conservative, I can bet 6 matches which have almost the same expected outcome with \$20.40).
 
 ## Cumulative mean and cumulative variance via updating (Welford's Algorithm)
 
@@ -247,7 +323,7 @@ axis(1, tick = FALSE, line = -0.5)
 axis(2, tick = FALSE, line = -0.5)
 mtext('x', 1, line = 2, family = 'serif')
 mtext('Density', 2, line = 2, family = 'serif', las = 0)
-mtext('Probability density', 3, line = 2, family = 'serif', 
+mtext('Probability density', 3, line = 1, family = 'serif', 
       font = 2, cex = 1.5)
 box(col = col_fade)
 
@@ -257,7 +333,7 @@ axis(1, tick = FALSE, line = -0.5)
 axis(2, tick = FALSE, line = -0.5)
 mtext('x', 1, line = 2, family = 'serif')
 mtext('Count', 2, line = 2.5, family = 'serif', las = 0)
-mtext('Random samples', 3, line = 2, family = 'serif', 
+mtext('Random samples', 3, line = 1, family = 'serif', 
       font = 2, cex = 1.5)
 box(col = col_fade)
 par(mfrow = c(1, 1))
