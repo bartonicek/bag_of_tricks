@@ -74,7 +74,7 @@ y_s <- rbinom(n, 10, theta_s) # ...of wins out of 10 matches
 
 ```{r, fig.retina=2, echo=FALSE}
 
-par(mfrow = c(1, 2),
+par(mfrow = c(1, 2), mar = c(5, 4, 4, 2),
     bg = col_bg)
 
 plot(theta, post, type = 'n', axes = FALSE, 
