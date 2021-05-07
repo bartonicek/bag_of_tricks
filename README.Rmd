@@ -1,5 +1,5 @@
 ---
-title: "Handy Algorithms"
+title: "Bag of Tricks"
 author: "Adam Bartonicek"
 date: "(last updated: `r as.Date(Sys.time())`)"
 output: 
