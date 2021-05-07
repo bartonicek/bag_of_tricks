@@ -74,7 +74,7 @@ y_s <- rbinom(n, 10, theta_s) # ...of wins out of 10 matches
 
 ```{r, fig.retina=2, echo=FALSE}
 
-par(mar = c(5, 4, 4, 2), mfrow = c(1, 2),
+par(mfrow = c(1, 2),
     bg = col_bg)
 
 plot(theta, post, type = 'n', axes = FALSE, 
@@ -99,6 +99,7 @@ mtext('Count', 2, line = 2.5, family = 'serif', las = 0)
 mtext("Random samples given\nplayer's ability", 3, line = 1, 
       family = 'serif', adj = 0, cex = 1.5)
 box(bty = 'L', col = col_fade)
+par(mfrow = c(1, 1))
 
 ```
 
