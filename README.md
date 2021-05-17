@@ -1,37 +1,39 @@
 Bag of Tricks
 ================
 Adam Bartonicek
-(last updated: 2021-05-07)
+(last updated: 2021-05-17)
 
--   [Bag of Tricks](#bag-of-tricks)
-    -   [Bayes Rule](#bayes-rule)
-    -   [Cumulative mean and cumulative variance via updating (Welford’s
-        Algorithm)](#cumulative-mean-and-cumulative-variance-via-updating-welfords-algorithm)
-    -   [Euler’s method](#eulers-method)
-    -   [Determinant via
-        row-operations](#determinant-via-row-operations)
-    -   [Faster `sample()`](#faster-sample)
-    -   [Inverse transform random
-        sampling](#inverse-transform-random-sampling)
-    -   [Piecewise linear regression](#piecewise-linear-regression)
-    -   [Pseudo-random number generation (linear congruential
-        generator)](#pseudo-random-number-generation-linear-congruential-generator)
+-   [Bayes Rule](#bayes-rule)
+-   [Cumulative mean and cumulative variance via updating (Welford’s
+    Algorithm)](#cumulative-mean-and-cumulative-variance-via-updating-welfords-algorithm)
+-   [Euler’s method](#eulers-method)
+-   [Determinant via row-operations](#determinant-via-row-operations)
+-   [Faster `sample()`](#faster-sample)
+-   [Generalized cross-validation
+    (GCV)](#generalized-cross-validation-gcv)
+-   [Inverse transform random
+    sampling](#inverse-transform-random-sampling)
+-   [Piecewise linear regression](#piecewise-linear-regression)
+-   [Pseudo-random number generation (linear congruential
+    generator)](#pseudo-random-number-generation-linear-congruential-generator)
 
-# Bag of Tricks
-
-This is a kind of personal handbook of short algorithms, methods and
+This is a kind of personal handbook of short algorithms, methods, and
 tricks that I found useful at some time or another during my journey
-into statistical computing. I’m writing this to help me remember:
+into statistical computing. I’m compiling this list to help me remember:
 
 1.  What interesting statistical computing problems I have encountered
     in the past
-2.  How to solve them (in a clever/interesting way)
+2.  How to solve them
 
-Each piece of code may not be the most efficient/elegant solutions to a
-given problem. Instead, I tried to strike balance between legibility and
-length.
+Each piece of code is probably not the most efficient/elegant solution
+to a given problem. Instead, I tried to strike balance between length
+and legibility.
 
-Most of the code will be in R, unless I decide otherwise.
+Most of the code will be in R, unless I decide otherwise. Code for the
+plots is not shown but can be found in the .Rmd file.
+
+If you find any problems or inconsistencies, please email me at:
+<bartonicek@gmail.com>
 
 ## Bayes Rule
 
@@ -71,6 +73,8 @@ y_s <- rbinom(n, 10, theta_s) # ...of wins out of 10 matches
 
 <img src="README_files/figure-gfm/unnamed-chunk-3-1.png" width="672" style="display: block; margin: auto;" />
 
+ 
+
 ``` r
 # Probs. of matches won
 ps <- table(y_s) / sum(table(y_s))
@@ -79,28 +83,32 @@ ps <- table(y_s) / sum(table(y_s))
 cps <- cumsum(rev(ps)) # Have to reverse to count X or fewer
 
 # Expected outcomes for each decision
-data.frame(prob_of_x = as.numeric(ps), 
-           prob_at_least_x = as.numeric(cps),
-           payoff = cps * (10:0) * 10 - 30)
+tab <- cbind(Wins = 10:0,
+      `Probability of X wins` = round(as.numeric(rev(ps)), 3), 
+      `Probability of X or more wins` = round(as.numeric(cps), 3),
+      Payoff = round(cps * (10:0) * 10 - 30, 2))
+
+knitr::kable(tab, row.names = FALSE)
 ```
 
-    ##    prob_of_x prob_at_least_x    payoff
-    ## 10  0.000558        0.154643 -14.53570
-    ## 9   0.003163        0.360795   2.47155
-    ## 8   0.009653        0.558965  14.71720
-    ## 7   0.023046        0.721758  20.52306
-    ## 6   0.045291        0.840583  20.43498
-    ## 5   0.077706        0.918289  15.91445
-    ## 4   0.118825        0.963580   8.54320
-    ## 3   0.162793        0.986626  -0.40122
-    ## 2   0.198170        0.996279 -10.07442
-    ## 1   0.206152        0.999442 -20.00558
-    ## 0   0.154643        1.000000 -30.00000
+| Wins | Probability of X wins | Probability of X or more wins | Payoff |
+|-----:|----------------------:|------------------------------:|-------:|
+|   10 |                 0.154 |                         0.154 | -14.55 |
+|    9 |                 0.206 |                         0.361 |   2.45 |
+|    8 |                 0.198 |                         0.559 |  14.70 |
+|    7 |                 0.163 |                         0.722 |  20.54 |
+|    6 |                 0.119 |                         0.841 |  20.45 |
+|    5 |                 0.077 |                         0.918 |  15.91 |
+|    4 |                 0.045 |                         0.964 |   8.55 |
+|    3 |                 0.023 |                         0.987 |  -0.40 |
+|    2 |                 0.010 |                         0.996 | -10.07 |
+|    1 |                 0.003 |                         0.999 | -20.01 |
+|    0 |                 0.001 |                         1.000 | -30.00 |
 
 Clearly, the best choice is to bet that the tennis player is going to
-win 7 matches, as it has the highest expected outcome of $20.50 (or, if
+win 7 matches, as it has the highest expected outcome of $20.56 (or, if
 I feel a bit more conservative, I can bet 6 matches which have almost
-the same expected outcome with $20.40).
+the same expected outcome with $20.44).
 
 ## Cumulative mean and cumulative variance via updating (Welford’s Algorithm)
 
@@ -190,8 +198,6 @@ euler <- function(dy = NULL, x0 = 0, y0 = 1, stepsize = 0.1, len = 100) {
 # Example
 b <- euler(dy, stepsize = 0.05)
 x <- seq(0, 5, length.out = 100)
-
-# Plot code not shown (see .Rmd)
 ```
 
 <img src="README_files/figure-gfm/unnamed-chunk-8-1.png" style="display: block; margin: auto;" />
@@ -262,12 +268,48 @@ n <- 1e7
 t1 <- system.time(ceiling(runif(n, 0, 9))) # Almost 2 x faster
 t2 <- system.time(sample(1:9, n, replace = TRUE))
 
-rbind(t1, t2)
+knitr::kable(rbind(t1, t2)[, 1:3])
 ```
 
-    ##    user.self sys.self elapsed user.child sys.child
-    ## t1     0.289    0.016   0.305          0         0
-    ## t2     0.541    0.016   0.558          0         0
+|     | user.self | sys.self | elapsed |
+|:----|----------:|---------:|--------:|
+| t1  |     0.314 |    0.012 |   0.327 |
+| t2  |     0.552 |    0.023 |   0.575 |
+
+## Generalized cross-validation (GCV)
+
+Compute an efficient approximation to leave-one-out cross-validation
+(LOO-CV) using hat-values (leverages) from a fitted model. Requires the
+model to be fit only once (instead of *n* times). Uses the following
+formula:
+
+From [An Introduction to Statistical
+Learning](https://www.statlearning.com/)
+
+``` r
+fit <- lm(mpg ~ wt, data = mtcars) # Good old boring mtcars data
+
+y <- mtcars$mpg
+preds <- fitted(fit) # Predicted values
+h <- hatvalues(fit) # Leverages
+
+# Almost MSE but each diff divided by (1 - h) before squaring
+mse_gcv <- sum(((y - preds) / (1 - h))^2) / length(y) 
+
+se_cv <- numeric(length(y))
+
+for (i in seq_along(y)) {
+  fit <- lm(mpg ~ wt, data = mtcars[-i, ])
+  se_cv[i] <- (y[i] - predict(fit, newdata = mtcars[i, ]))^2
+}
+
+mse_cv <- mean(se_cv)
+
+c(GCV = mse_gcv, `LOO-CV` = mse_cv) # identical
+```
+
+    ##      GCV   LOO-CV 
+    ## 10.25071 10.25071
 
 ## Inverse transform random sampling
 
@@ -303,11 +345,9 @@ icdf <- approxfun(cumdens, seq(0.01, 5, 0.01))
 # Draw random samples & transform via ICDF (+ flip sign)
 samples <- runif(10000, 0, 0.5)
 x <- icdf(samples) * ifelse(runif(1000, 0, 2) > 1, 1, -1)
-
-# Plot code not shown (see .Rmd)
 ```
 
-<img src="README_files/figure-gfm/unnamed-chunk-12-1.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-13-1.png" style="display: block; margin: auto;" />
 
 ## Piecewise linear regression
 
@@ -340,7 +380,7 @@ newy <- predict(fit1, data.frame(newX), type = 'response',
                 interval = 'prediction')
 ```
 
-<img src="README_files/figure-gfm/unnamed-chunk-14-1.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-15-1.png" style="display: block; margin: auto;" />
 
 ## Pseudo-random number generation (linear congruential generator)
 
@@ -370,8 +410,6 @@ for (i in 2:nsamples) {
 }
 
 s <- s / max(s)
-
-# Plot code not shown (see .Rmd)
 ```
 
-<img src="README_files/figure-gfm/unnamed-chunk-16-1.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-17-1.png" style="display: block; margin: auto;" />
