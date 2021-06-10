@@ -1,7 +1,7 @@
 Bag of Tricks
 ================
 Adam Bartonicek
-(last updated: 2021-05-17)
+(last updated: 2021-06-10)
 
 -   [Bayes Rule](#bayes-rule)
 -   [Cumulative mean and cumulative variance via updating (Welford’s
@@ -13,9 +13,12 @@ Adam Bartonicek
     (GCV)](#generalized-cross-validation-gcv)
 -   [Inverse transform random
     sampling](#inverse-transform-random-sampling)
+-   [Linear regression via chunks](#linear-regression-via-chunks)
 -   [Piecewise linear regression](#piecewise-linear-regression)
 -   [Pseudo-random number generation (linear congruential
     generator)](#pseudo-random-number-generation-linear-congruential-generator)
+-   [Variance-covariance matrix by
+    hand](#variance-covariance-matrix-by-hand)
 
 This is a kind of personal handbook of short algorithms, methods, and
 tricks that I found useful at some time or another during my journey
@@ -93,12 +96,12 @@ knitr::kable(tab, row.names = FALSE)
 
 | Wins | Probability of X wins | Probability of X or more wins | Payoff |
 |-----:|----------------------:|------------------------------:|-------:|
-|   10 |                 0.154 |                         0.154 | -14.55 |
-|    9 |                 0.206 |                         0.361 |   2.45 |
-|    8 |                 0.198 |                         0.559 |  14.70 |
+|   10 |                 0.154 |                         0.154 | -14.56 |
+|    9 |                 0.206 |                         0.360 |   2.44 |
+|    8 |                 0.199 |                         0.559 |  14.74 |
 |    7 |                 0.163 |                         0.722 |  20.54 |
-|    6 |                 0.119 |                         0.841 |  20.45 |
-|    5 |                 0.077 |                         0.918 |  15.91 |
+|    6 |                 0.119 |                         0.841 |  20.46 |
+|    5 |                 0.078 |                         0.918 |  15.92 |
 |    4 |                 0.045 |                         0.964 |   8.55 |
 |    3 |                 0.023 |                         0.987 |  -0.40 |
 |    2 |                 0.010 |                         0.996 | -10.07 |
@@ -238,13 +241,13 @@ det_row <- function(mat) {
 
 # Example
 
-set.seed(12345)
+set.seed(123456)
 mat <- matrix(sample(1:9), ncol = 3)
 
 c(det_row(mat), det(mat))
 ```
 
-    ## [1] -95 -95
+    ## [1] 91 91
 
 ## Faster `sample()`
 
@@ -273,15 +276,14 @@ knitr::kable(rbind(t1, t2)[, 1:3])
 
 |     | user.self | sys.self | elapsed |
 |:----|----------:|---------:|--------:|
-| t1  |     0.314 |    0.012 |   0.327 |
-| t2  |     0.552 |    0.023 |   0.575 |
+| t1  |     0.328 |    0.012 |   0.340 |
+| t2  |     0.616 |    0.020 |   0.636 |
 
 ## Generalized cross-validation (GCV)
 
 Compute an efficient approximation to leave-one-out cross-validation
 (LOO-CV) using hat-values (leverages) from a fitted model. Requires the
-model to be fit only once (instead of *n* times). Uses the following
-formula:
+model to be fit only once (instead of *n* times).
 
 From [An Introduction to Statistical
 Learning](https://www.statlearning.com/)
@@ -349,6 +351,48 @@ x <- icdf(samples) * ifelse(runif(1000, 0, 2) > 1, 1, -1)
 
 <img src="README_files/figure-gfm/unnamed-chunk-13-1.png" style="display: block; margin: auto;" />
 
+## Linear regression via chunks
+
+Fit a linear regression by calculating *X*<sup>*T*</sup>*X* and
+*X*<sup>*T*</sup>*y* only with chunk of the data at a time, accumulating
+the results. Useful when the data too large to keep in memory -
+streaming.
+
+``` r
+X <- matrix(c(rep(1, 100),                       # Predictor matrix
+              floor(runif(100, 0, 10)),
+              floor(runif(100, 0, 10))), ncol = 3)
+beta <- c(-0.5, 2.25, -1)                        # Predictor slopes
+y <- X %*% beta + rnorm(100, 0, 1)               
+
+XtX <- matrix(0, 3, 3)                           # Initialize empty
+XtY <- matrix(0, 3, 1)                           # XtX and XtY matrices
+
+for (i in 0:9) {
+  m1 <- t(X[i * 10 + 1:10, ]) %*% X[i * 10 + 1:10, ] # Compute XtX and XtY
+  m2 <- t(X[i * 10 + 1:10, ]) %*% y[i * 10 + 1:10, ] # on chunks of data
+ 
+  XtX <- XtX + m1      # Accumulate results
+  XtY <- XtY + m2
+}
+
+solve(XtX) %*% XtY                  # Using the chunking method
+```
+
+    ##            [,1]
+    ## [1,] -0.5691946
+    ## [2,]  2.2319190
+    ## [3,] -0.9955033
+
+``` r
+solve(t(X) %*% X) %*% t(X) %*% y    # Your usual least-squares
+```
+
+    ##            [,1]
+    ## [1,] -0.5691946
+    ## [2,]  2.2319190
+    ## [3,] -0.9955033
+
 ## Piecewise linear regression
 
 Fit a “piecewise” linear regression model (in base R) with pre-specified
@@ -380,7 +424,7 @@ newy <- predict(fit1, data.frame(newX), type = 'response',
                 interval = 'prediction')
 ```
 
-<img src="README_files/figure-gfm/unnamed-chunk-15-1.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-16-1.png" style="display: block; margin: auto;" />
 
 ## Pseudo-random number generation (linear congruential generator)
 
@@ -412,4 +456,53 @@ for (i in 2:nsamples) {
 s <- s / max(s)
 ```
 
-<img src="README_files/figure-gfm/unnamed-chunk-17-1.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-18-1.png" style="display: block; margin: auto;" />
+
+## Variance-covariance matrix by hand
+
+Not a trick but it’s useful to see how the variance-covariance matrix
+(`vcov()`) gets computed:
+
+``` r
+set.seed(123456)
+n <- 10
+p <- 3
+
+X <- matrix(c(rep(1, n),                   # Predictor matrix
+              round(runif(n, 0, 5), 2),
+              round(runif(n, 0, 5), 2)),
+            ncol = p)
+beta <- c(-0.5, 1.5, -3)                   # Predictor slopes
+
+y <- X %*% beta + rnorm(n)
+fit1 <- lm(y ~ X - 1)
+
+XtX <- t(X) %*% X
+y_hat <- X %*% solve(XtX) %*% t(X) %*% y    # Predicted values
+sse <- sum((y - y_hat)^2)                   # Sum of squared residuals
+s2 <- sse / (n - p)                         # Sample estimate of variance
+
+vcov1 <- vcov(fit1)
+vcov2 <- solve(XtX) * s2
+
+all(round(vcov1, 10) == round(vcov2, 10))
+```
+
+    ## [1] TRUE
+
+``` r
+vcov2
+```
+
+    ##            [,1]        [,2]        [,3]
+    ## [1,]  1.4418054 -0.16250102 -0.26564734
+    ## [2,] -0.1625010  0.05274984  0.01111698
+    ## [3,] -0.2656473  0.01111698  0.06612470
+
+``` r
+rbind(sqrt(diag(vcov2)), summary(fit1)[[4]][, 2])
+```
+
+    ##            X1        X2        X3
+    ## [1,] 1.200752 0.2296733 0.2571472
+    ## [2,] 1.200752 0.2296733 0.2571472

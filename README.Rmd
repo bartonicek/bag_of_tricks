@@ -261,7 +261,7 @@ det_row <- function(mat) {
 
 # Example
 
-set.seed(12345)
+set.seed(123456)
 mat <- matrix(sample(1:9), ncol = 3)
 
 c(det_row(mat), det(mat))
@@ -288,7 +288,7 @@ knitr::kable(rbind(t1, t2)[, 1:3])
 
 ## Generalized cross-validation (GCV)
 
-Compute an efficient approximation to leave-one-out cross-validation (LOO-CV) using hat-values (leverages) from a fitted model. Requires the model to be fit only once (instead of $n$ times). Uses the following formula:
+Compute an efficient approximation to leave-one-out cross-validation (LOO-CV) using hat-values (leverages) from a fitted model. Requires the model to be fit only once (instead of $n$ times).
 
 From [An Introduction to Statistical Learning](https://www.statlearning.com/)
 
@@ -367,6 +367,34 @@ mtext('Count', 2, line = 2.5, family = 'serif', las = 0)
 mtext('Random samples', 3, line = 1, family = 'serif', cex = 1.5)
 box(col = col_fade)
 par(mfrow = c(1, 1))
+
+```
+
+## Linear regression via chunks
+
+Fit a linear regression by calculating $X^TX$ and $X^Ty$ only with chunk of the data at a time, accumulating the results. Useful when the data too large to keep in memory - streaming.
+
+```{r}
+
+X <- matrix(c(rep(1, 100),                       # Predictor matrix
+              floor(runif(100, 0, 10)),
+              floor(runif(100, 0, 10))), ncol = 3)
+beta <- c(-0.5, 2.25, -1)                        # Predictor slopes
+y <- X %*% beta + rnorm(100, 0, 1)               
+
+XtX <- matrix(0, 3, 3)                           # Initialize empty
+XtY <- matrix(0, 3, 1)                           # XtX and XtY matrices
+
+for (i in 0:9) {
+  m1 <- t(X[i * 10 + 1:10, ]) %*% X[i * 10 + 1:10, ] # Compute XtX and XtY
+  m2 <- t(X[i * 10 + 1:10, ]) %*% y[i * 10 + 1:10, ] # on chunks of data
+ 
+  XtX <- XtX + m1      # Accumulate results
+  XtY <- XtY + m2
+}
+
+solve(XtX) %*% XtY                  # Using the chunking method
+solve(t(X) %*% X) %*% t(X) %*% y    # Your usual least-squares
 
 ```
 
@@ -463,3 +491,36 @@ box(col = col_fade)
 
 ```
 
+## Variance-covariance matrix by hand
+
+Not a trick but it's useful to see how the variance-covariance matrix (`vcov()`) gets computed:
+
+```{r}
+set.seed(123456)
+n <- 10
+p <- 3
+
+X <- matrix(c(rep(1, n),                   # Predictor matrix
+              round(runif(n, 0, 5), 2),
+              round(runif(n, 0, 5), 2)),
+            ncol = p)
+beta <- c(-0.5, 1.5, -3)                   # Predictor slopes
+
+y <- X %*% beta + rnorm(n)
+fit1 <- lm(y ~ X - 1)
+
+XtX <- t(X) %*% X
+y_hat <- X %*% solve(XtX) %*% t(X) %*% y    # Predicted values
+sse <- sum((y - y_hat)^2)                   # Sum of squared residuals
+s2 <- sse / (n - p)                         # Sample estimate of variance
+
+vcov1 <- vcov(fit1)
+vcov2 <- solve(XtX) * s2
+
+all(round(vcov1, 10) == round(vcov2, 10))
+
+vcov2
+
+rbind(sqrt(diag(vcov2)), summary(fit1)[[4]][, 2])
+
+```
