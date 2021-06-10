@@ -96,13 +96,13 @@ knitr::kable(tab, row.names = FALSE)
 
 | Wins | Probability of X wins | Probability of X or more wins | Payoff |
 |-----:|----------------------:|------------------------------:|-------:|
-|   10 |                 0.155 |                         0.155 | -14.50 |
-|    9 |                 0.206 |                         0.361 |   2.45 |
-|    8 |                 0.199 |                         0.559 |  14.75 |
-|    7 |                 0.163 |                         0.722 |  20.55 |
-|    6 |                 0.119 |                         0.841 |  20.44 |
+|   10 |                 0.155 |                         0.155 | -14.49 |
+|    9 |                 0.205 |                         0.360 |   2.40 |
+|    8 |                 0.199 |                         0.559 |  14.71 |
+|    7 |                 0.163 |                         0.722 |  20.52 |
+|    6 |                 0.119 |                         0.841 |  20.43 |
 |    5 |                 0.078 |                         0.918 |  15.92 |
-|    4 |                 0.046 |                         0.964 |   8.55 |
+|    4 |                 0.045 |                         0.964 |   8.55 |
 |    3 |                 0.023 |                         0.987 |  -0.40 |
 |    2 |                 0.010 |                         0.996 | -10.07 |
 |    1 |                 0.003 |                         0.999 | -20.01 |
@@ -276,8 +276,8 @@ knitr::kable(rbind(t1, t2)[, 1:3])
 
 |     | user.self | sys.self | elapsed |
 |:----|----------:|---------:|--------:|
-| t1  |     0.317 |    0.012 |   0.330 |
-| t2  |     0.579 |    0.024 |   0.604 |
+| t1  |     0.323 |    0.025 |   0.347 |
+| t2  |     0.625 |    0.008 |   0.633 |
 
 ## Generalized cross-validation (GCV)
 
@@ -397,24 +397,6 @@ solve(t(X) %*% X) %*% t(X) %*% y    # Your usual least-squares
     ## [1,] -0.6077084
     ## [2,]  2.2710887
     ## [3,] -1.0061559
-
-``` r
-coef1 <- solve(t(X) %*% X) %*% t(X) %*% y
-
-par(bg = col_bg)
-plot(1:9, beta_i[2, ], type = 'l', 
-     col = col_highlight, lwd = 2.5, axes = FALSE,
-     xlab = '', ylab = '')
-abline(h = coef1[2, 1], lty = 'dashed', col = col_fade, lwd = 1.5)
-text(x = 4.5, y = 2.26, labels = 'Full-data least squares estimate', 
-     col = col_fade)
-text(x = 6.75, y = 2.20, labels = 'Accumulated estimate', col = col_highlight)
-axis(1, at = 1:9, line = -0.5, tick = FALSE)
-axis(2, line = -0.5, tick = FALSE)
-box(bty = 'L', col = col_fade)
-mtext('Chunk', 1, line = 2, family = 'serif')
-mtext(expression(hat(beta)[1]), 2, line = 2, family = 'serif')
-```
 
 <img src="README_files/figure-gfm/unnamed-chunk-15-1.svg" style="display: block; margin: auto;" />
 
