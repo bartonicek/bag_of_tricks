@@ -402,7 +402,7 @@ solve(t(X) %*% X) %*% t(X) %*% y    # Your usual least-squares
 
 ```
 
-```{r}
+```{r, echo=FALSE}
 
 coef1 <- solve(t(X) %*% X) %*% t(X) %*% y
 
