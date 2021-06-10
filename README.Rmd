@@ -24,7 +24,7 @@ If you find any problems or inconsistencies, please email me at: bartonicek@gmai
 ```{r setup, include=FALSE}
 
 knitr::opts_chunk$set(echo = TRUE, message=FALSE, warning=FALSE, 
-                      fig.align='center')
+                      fig.align='center', dev = 'svg')
 knitr::opts_knit$set(global.par = TRUE)
 
 ```
@@ -375,7 +375,7 @@ par(mfrow = c(1, 1))
 Fit a linear regression by calculating $X^TX$ and $X^Ty$ only with chunk of the data at a time, accumulating the results. Useful when the data too large to keep in memory - streaming.
 
 ```{r}
-
+set.seed(123456)
 X <- matrix(c(rep(1, 100),                       # Predictor matrix
               floor(runif(100, 0, 10)),
               floor(runif(100, 0, 10))), ncol = 3)
@@ -385,16 +385,40 @@ y <- X %*% beta + rnorm(100, 0, 1)
 XtX <- matrix(0, 3, 3)                           # Initialize empty
 XtY <- matrix(0, 3, 1)                           # XtX and XtY matrices
 
+beta_i <- matrix(0, 3, 9)
+
 for (i in 0:9) {
   m1 <- t(X[i * 10 + 1:10, ]) %*% X[i * 10 + 1:10, ] # Compute XtX and XtY
   m2 <- t(X[i * 10 + 1:10, ]) %*% y[i * 10 + 1:10, ] # on chunks of data
  
   XtX <- XtX + m1      # Accumulate results
   XtY <- XtY + m2
+  
+  beta_i[, i] <- solve(XtX) %*% XtY
 }
 
 solve(XtX) %*% XtY                  # Using the chunking method
 solve(t(X) %*% X) %*% t(X) %*% y    # Your usual least-squares
+
+```
+
+```{r}
+
+coef1 <- solve(t(X) %*% X) %*% t(X) %*% y
+
+par(bg = col_bg)
+plot(1:9, beta_i[2, ], type = 'l', 
+     col = col_highlight, lwd = 2.5, axes = FALSE,
+     xlab = '', ylab = '')
+abline(h = coef1[2, 1], lty = 'dashed', col = col_fade, lwd = 1.5)
+text(x = 4.5, y = 2.26, labels = 'Full-data least squares estimate', 
+     col = col_fade)
+text(x = 6.75, y = 2.20, labels = 'Accumulated estimate', col = col_highlight)
+axis(1, at = 1:9, line = -0.5, tick = FALSE)
+axis(2, line = -0.5, tick = FALSE)
+box(bty = 'L', col = col_fade)
+mtext('Chunk', 1, line = 2, family = 'serif')
+mtext(expression(hat(beta)[1]), 2, line = 2, family = 'serif')
 
 ```
 
@@ -438,7 +462,7 @@ polygon(c(newx, rev(newx)),
         border = NA, col = 'grey92')
 points(x, y, pch = 19, col = 'grey20')
 lines(newx, newy[, 1], col = col_highlight, lwd = 2.5)
-text(13, 75, label = '95% prediction interval', col = col_fade)
+text(13.5, 75, label = '95% prediction interval', col = col_fade)
 axis(1, tick = FALSE, line = -0.5)
 axis(2, tick = FALSE, line = -0.5, las = 1)
 box(bty = 'L', col = 'grey60')

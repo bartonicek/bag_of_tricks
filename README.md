@@ -74,7 +74,7 @@ theta_s <- rbeta(n, a, b) # ...of theta
 y_s <- rbinom(n, 10, theta_s) # ...of wins out of 10 matches
 ```
 
-<img src="README_files/figure-gfm/unnamed-chunk-3-1.png" width="672" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-3-1.svg" width="672" style="display: block; margin: auto;" />
 
  
 
@@ -96,13 +96,13 @@ knitr::kable(tab, row.names = FALSE)
 
 | Wins | Probability of X wins | Probability of X or more wins | Payoff |
 |-----:|----------------------:|------------------------------:|-------:|
-|   10 |                 0.154 |                         0.154 | -14.56 |
-|    9 |                 0.206 |                         0.360 |   2.44 |
-|    8 |                 0.199 |                         0.559 |  14.74 |
-|    7 |                 0.163 |                         0.722 |  20.54 |
-|    6 |                 0.119 |                         0.841 |  20.46 |
+|   10 |                 0.155 |                         0.155 | -14.50 |
+|    9 |                 0.206 |                         0.361 |   2.45 |
+|    8 |                 0.199 |                         0.559 |  14.75 |
+|    7 |                 0.163 |                         0.722 |  20.55 |
+|    6 |                 0.119 |                         0.841 |  20.44 |
 |    5 |                 0.078 |                         0.918 |  15.92 |
-|    4 |                 0.045 |                         0.964 |   8.55 |
+|    4 |                 0.046 |                         0.964 |   8.55 |
 |    3 |                 0.023 |                         0.987 |  -0.40 |
 |    2 |                 0.010 |                         0.996 | -10.07 |
 |    1 |                 0.003 |                         0.999 | -20.01 |
@@ -161,7 +161,7 @@ all.equal(csigma1, csigma2)
 
     ## [1] TRUE
 
-<img src="README_files/figure-gfm/unnamed-chunk-6-1.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-6-1.svg" style="display: block; margin: auto;" />
 
 ## Euler’s method
 
@@ -203,7 +203,7 @@ b <- euler(dy, stepsize = 0.05)
 x <- seq(0, 5, length.out = 100)
 ```
 
-<img src="README_files/figure-gfm/unnamed-chunk-8-1.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-8-1.svg" style="display: block; margin: auto;" />
 
 ## Determinant via row-operations
 
@@ -276,8 +276,8 @@ knitr::kable(rbind(t1, t2)[, 1:3])
 
 |     | user.self | sys.self | elapsed |
 |:----|----------:|---------:|--------:|
-| t1  |     0.328 |    0.012 |   0.340 |
-| t2  |     0.616 |    0.020 |   0.636 |
+| t1  |     0.317 |    0.012 |   0.330 |
+| t2  |     0.579 |    0.024 |   0.604 |
 
 ## Generalized cross-validation (GCV)
 
@@ -349,7 +349,7 @@ samples <- runif(10000, 0, 0.5)
 x <- icdf(samples) * ifelse(runif(1000, 0, 2) > 1, 1, -1)
 ```
 
-<img src="README_files/figure-gfm/unnamed-chunk-13-1.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-13-1.svg" style="display: block; margin: auto;" />
 
 ## Linear regression via chunks
 
@@ -359,6 +359,7 @@ the results. Useful when the data too large to keep in memory -
 streaming.
 
 ``` r
+set.seed(123456)
 X <- matrix(c(rep(1, 100),                       # Predictor matrix
               floor(runif(100, 0, 10)),
               floor(runif(100, 0, 10))), ncol = 3)
@@ -368,30 +369,54 @@ y <- X %*% beta + rnorm(100, 0, 1)
 XtX <- matrix(0, 3, 3)                           # Initialize empty
 XtY <- matrix(0, 3, 1)                           # XtX and XtY matrices
 
+beta_i <- matrix(0, 3, 9)
+
 for (i in 0:9) {
   m1 <- t(X[i * 10 + 1:10, ]) %*% X[i * 10 + 1:10, ] # Compute XtX and XtY
   m2 <- t(X[i * 10 + 1:10, ]) %*% y[i * 10 + 1:10, ] # on chunks of data
  
   XtX <- XtX + m1      # Accumulate results
   XtY <- XtY + m2
+  
+  beta_i[, i] <- solve(XtX) %*% XtY
 }
 
 solve(XtX) %*% XtY                  # Using the chunking method
 ```
 
     ##            [,1]
-    ## [1,] -0.5691946
-    ## [2,]  2.2319190
-    ## [3,] -0.9955033
+    ## [1,] -0.6077084
+    ## [2,]  2.2710887
+    ## [3,] -1.0061559
 
 ``` r
 solve(t(X) %*% X) %*% t(X) %*% y    # Your usual least-squares
 ```
 
     ##            [,1]
-    ## [1,] -0.5691946
-    ## [2,]  2.2319190
-    ## [3,] -0.9955033
+    ## [1,] -0.6077084
+    ## [2,]  2.2710887
+    ## [3,] -1.0061559
+
+``` r
+coef1 <- solve(t(X) %*% X) %*% t(X) %*% y
+
+par(bg = col_bg)
+plot(1:9, beta_i[2, ], type = 'l', 
+     col = col_highlight, lwd = 2.5, axes = FALSE,
+     xlab = '', ylab = '')
+abline(h = coef1[2, 1], lty = 'dashed', col = col_fade, lwd = 1.5)
+text(x = 4.5, y = 2.26, labels = 'Full-data least squares estimate', 
+     col = col_fade)
+text(x = 6.75, y = 2.20, labels = 'Accumulated estimate', col = col_highlight)
+axis(1, at = 1:9, line = -0.5, tick = FALSE)
+axis(2, line = -0.5, tick = FALSE)
+box(bty = 'L', col = col_fade)
+mtext('Chunk', 1, line = 2, family = 'serif')
+mtext(expression(hat(beta)[1]), 2, line = 2, family = 'serif')
+```
+
+<img src="README_files/figure-gfm/unnamed-chunk-15-1.svg" style="display: block; margin: auto;" />
 
 ## Piecewise linear regression
 
@@ -424,7 +449,7 @@ newy <- predict(fit1, data.frame(newX), type = 'response',
                 interval = 'prediction')
 ```
 
-<img src="README_files/figure-gfm/unnamed-chunk-16-1.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-17-1.svg" style="display: block; margin: auto;" />
 
 ## Pseudo-random number generation (linear congruential generator)
 
@@ -456,7 +481,7 @@ for (i in 2:nsamples) {
 s <- s / max(s)
 ```
 
-<img src="README_files/figure-gfm/unnamed-chunk-18-1.png" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-19-1.svg" style="display: block; margin: auto;" />
 
 ## Variance-covariance matrix by hand
 
