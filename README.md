@@ -1,7 +1,7 @@
 Bag of Tricks
 ================
 Adam Bartonicek
-(last updated: 2021-06-10)
+(last updated: 2021-07-01)
 
 -   [Bayes Rule](#bayes-rule)
 -   [Cumulative mean and cumulative variance via updating (Welford’s
@@ -13,7 +13,9 @@ Adam Bartonicek
     (GCV)](#generalized-cross-validation-gcv)
 -   [Inverse transform random
     sampling](#inverse-transform-random-sampling)
--   [Linear regression via chunks](#linear-regression-via-chunks)
+-   [Iteratively re-weighted least squares from
+    scratch](#iteratively-re-weighted-least-squares-from-scratch)
+-   [Linear regression streaming](#linear-regression-streaming)
 -   [Piecewise linear regression](#piecewise-linear-regression)
 -   [Pseudo-random number generation (linear congruential
     generator)](#pseudo-random-number-generation-linear-congruential-generator)
@@ -96,13 +98,13 @@ knitr::kable(tab, row.names = FALSE)
 
 | Wins | Probability of X wins | Probability of X or more wins | Payoff |
 |-----:|----------------------:|------------------------------:|-------:|
-|   10 |                 0.155 |                         0.155 | -14.49 |
-|    9 |                 0.205 |                         0.360 |   2.40 |
-|    8 |                 0.199 |                         0.559 |  14.71 |
-|    7 |                 0.163 |                         0.722 |  20.52 |
-|    6 |                 0.119 |                         0.841 |  20.43 |
-|    5 |                 0.078 |                         0.918 |  15.92 |
-|    4 |                 0.045 |                         0.964 |   8.55 |
+|   10 |                 0.154 |                         0.154 | -14.60 |
+|    9 |                 0.206 |                         0.360 |   2.37 |
+|    8 |                 0.198 |                         0.558 |  14.64 |
+|    7 |                 0.163 |                         0.721 |  20.50 |
+|    6 |                 0.119 |                         0.840 |  20.41 |
+|    5 |                 0.078 |                         0.918 |  15.91 |
+|    4 |                 0.045 |                         0.964 |   8.54 |
 |    3 |                 0.023 |                         0.987 |  -0.40 |
 |    2 |                 0.010 |                         0.996 | -10.07 |
 |    1 |                 0.003 |                         0.999 | -20.01 |
@@ -276,17 +278,20 @@ knitr::kable(rbind(t1, t2)[, 1:3])
 
 |     | user.self | sys.self | elapsed |
 |:----|----------:|---------:|--------:|
-| t1  |     0.323 |    0.025 |   0.347 |
-| t2  |     0.625 |    0.008 |   0.633 |
+| t1  |     0.288 |    0.020 |   0.312 |
+| t2  |     0.549 |    0.012 |   0.568 |
 
 ## Generalized cross-validation (GCV)
 
-Compute an efficient approximation to leave-one-out cross-validation
-(LOO-CV) using hat-values (leverages) from a fitted model. Requires the
-model to be fit only once (instead of *n* times).
+Computes an efficient approximation to leave-one-out cross-validation
+(LOO-CV) by using hat-values (leverages) from a fitted model. Requires
+the model to be fit only once (instead of *n* times). Uses the following
+formula:
 
-From [An Introduction to Statistical
-Learning](https://www.statlearning.com/)
+![equation](https://latex.codecogs.com/svg.latex?RMSE_%7BGCV%7D%20%3D%20%5Cfrac%7B1%7D%7BN%7D%20%5Csum_%7Bi%20%3D%201%7D%5EN%20%5Cbigg%28%20%5Cfrac%7By_i%20-%20%5Chat%20y_i%7D%7B1%20-%20h_i%7D%20%5Cbigg%29%5E2)
+
+(from [An Introduction to Statistical
+Learning](https://www.statlearning.com/))
 
 ``` r
 fit <- lm(mpg ~ wt, data = mtcars) # Good old boring mtcars data
@@ -294,6 +299,10 @@ fit <- lm(mpg ~ wt, data = mtcars) # Good old boring mtcars data
 y <- mtcars$mpg
 preds <- fitted(fit) # Predicted values
 h <- hatvalues(fit) # Leverages
+
+# Hat values from scratch:
+# X <-matrix(c(rep(1, 32), mtcars$wt), ncol = 2)
+# h <- diag(X %*% solve(t(X) %*% X) %*% t(X)) 
 
 # Almost MSE but each diff divided by (1 - h) before squaring
 mse_gcv <- sum(((y - preds) / (1 - h))^2) / length(y) 
@@ -351,12 +360,70 @@ x <- icdf(samples) * ifelse(runif(1000, 0, 2) > 1, 1, -1)
 
 <img src="README_files/figure-gfm/unnamed-chunk-13-1.svg" style="display: block; margin: auto;" />
 
-## Linear regression via chunks
+## Iteratively re-weighted least squares from scratch
+
+Fits a logistic regression by iterating a modified least-squares
+solutions:
+
+![equation](https://latex.codecogs.com/svg.latex?%5Cmathbf%7B%5Chat%20%5Cbeta_%7Bnew%7D%20%3D%20%5Chat%20%5Cbeta_%7Bold%7D%20-%20%28X%5E%5Cintercal%20R%20X%29%5E%7B-1%7D%20X%5E%5Cintercal%20%28%5Chat%20y%20-%20y%29%20%3D%20%28X%5E%5Cintercal%20R%20X%29%5E%7B-1%7D%20X%5E%5Cintercal%20z%7D)
+
+where:
+
+![equation](https://latex.codecogs.com/svg.latex?%5Cmathbf%7BR_%7Bnn%7D%20%3D%20%5Chat%20y_n%281%20-%20%5Chat%20y_n%29%7D)
+
+is a diagonal matrix of weights and:
+
+![equation](https://latex.codecogs.com/svg.latex?%5Cmathbf%7Bz%20%3D%20X%20%5Chat%20%5Cbeta_%7Bold%7D%20-%20R%5E%7B-1%7D%28%5Chat%20y%20-%20y%29%7D)
+
+is the working response. IRLS is a algorithm for computing generalized
+linear models.
+
+(from Christopher Bishop’s [Pattern Recognition and Machine
+Learning](https://www.springer.com/gp/book/9780387310732))
+
+``` r
+# Simulate data
+set.seed(123456)
+N <- 200
+X <- matrix(c(rep(1, N),
+              round(runif(N, 1, 10), 2)), 
+            ncol = 2)
+beta <- c(1.25, -0.5)
+
+eta <- X %*% beta
+p <- 1 / (1 + exp(-eta)) 
+y <- as.numeric(p > runif(N))
+
+sig <- function(x) 1 / (1 + exp(-x)) # Sigmoid function
+getR <- function(b) {                # Diagonal matrix of weights
+  diag(c(sig((X %*% b)) * sig((1 - X %*% b))))
+}
+
+beta_old <- c(Inf, Inf)
+beta_new <- c(0, 0)
+
+# IRLS algorithm - while the difference between the old and the updated
+# fit is greater than tolerance, keep refitting the modified least squares
+while (sum(abs(beta_old - beta_new)) > 1e-06) {
+  beta_old <- beta_new
+  R <- getR(beta_old)
+  z <- X %*% beta_old - solve(R) %*% (sig(X %*% beta_old) - y)
+  beta_new <- solve(t(X) %*% R %*% X) %*% t(X) %*% R %*% z
+}
+
+# Same results as glm()
+rbind(c(beta_new), coef(glm(y ~ X[, 2], family = 'binomial')))
+```
+
+    ##      (Intercept)     X[, 2]
+    ## [1,]    1.100072 -0.4716794
+    ## [2,]    1.100073 -0.4716794
+
+## Linear regression streaming
 
 Fit a linear regression by calculating *X*<sup>*T*</sup>*X* and
 *X*<sup>*T*</sup>*y* only with chunk of the data at a time, accumulating
-the results. Useful when the data too large to keep in memory -
-streaming.
+the results. Useful when the data too large to keep in memory.
 
 ``` r
 set.seed(123456)
@@ -398,7 +465,7 @@ solve(t(X) %*% X) %*% t(X) %*% y    # Your usual least-squares
     ## [2,]  2.2710887
     ## [3,] -1.0061559
 
-<img src="README_files/figure-gfm/unnamed-chunk-15-1.svg" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-16-1.svg" style="display: block; margin: auto;" />
 
 ## Piecewise linear regression
 
@@ -431,7 +498,7 @@ newy <- predict(fit1, data.frame(newX), type = 'response',
                 interval = 'prediction')
 ```
 
-<img src="README_files/figure-gfm/unnamed-chunk-17-1.svg" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-18-1.svg" style="display: block; margin: auto;" />
 
 ## Pseudo-random number generation (linear congruential generator)
 
@@ -463,7 +530,7 @@ for (i in 2:nsamples) {
 s <- s / max(s)
 ```
 
-<img src="README_files/figure-gfm/unnamed-chunk-19-1.svg" style="display: block; margin: auto;" />
+<img src="README_files/figure-gfm/unnamed-chunk-20-1.svg" style="display: block; margin: auto;" />
 
 ## Variance-covariance matrix by hand
 
